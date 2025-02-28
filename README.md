@@ -88,9 +88,4 @@ The Online Learning Management System (LMS) is designed to transform digital edu
 - **Offline Access:**  
   Allow users to download course materials for offline study and automatic synchronization when reconnected.
 
-## How to Contribute
-We welcome contributions to improve this project. Please fork the repository, create a new branch for your feature or bug fix, and submit a pull request for review.
-
-## License
-This project is licensed under the MIT License.
 
