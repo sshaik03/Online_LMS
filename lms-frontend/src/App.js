@@ -6,6 +6,7 @@ import { UserProvider, useUser } from './context/UserContext';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import LoadingState from './components/common/LoadingState';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Page Components
 import LoginPage from './components/auth/LoginPage';
@@ -55,9 +56,10 @@ const MainLayout = ({ children }) => {
 // Main App Component
 const App = () => {
   return (
-    <UserProvider>
-      <Router>
-        <Routes>
+    <ErrorBoundary>
+      <UserProvider>
+        <Router>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={
             <ProtectedRoute>
@@ -112,6 +114,7 @@ const App = () => {
         </Routes>
       </Router>
     </UserProvider>
+    </ErrorBoundary>
   );
 };
 
