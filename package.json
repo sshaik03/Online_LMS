@@ -1,0 +1,32 @@
+{
+  "name": "online_lms",
+  "version": "1.0.0",
+  "description": "## Overview The Online Learning Management System (LMS) is designed to transform digital education by providing a centralized platform for educators and learners. The system streamlines course delivery, enhances student engagement, and simplifies assessment and collaboration. It is targeted at academic institutions, corporate training programs, and independent educators who wish to leverage technology for a more interactive and flexible learning experience.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sshaik03/Online_LMS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sshaik03/Online_LMS/issues"
+  },
+  "homepage": "https://github.com/sshaik03/Online_LMS#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jest": "^29.7.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.14.2",
+    "supertest": "^7.1.0"
+  }
+}
