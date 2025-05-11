@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Book, User, Users, Settings, BarChart2 } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
+import { login, register } from '../../services/authService';
 
 // Role Option Component
 const RoleOption = ({ id, label, icon, selected, onChange }) => {
@@ -45,20 +46,63 @@ const FeatureItem = ({ icon, text }) => {
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState('student');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
   const { handleLogin } = useUser();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call delay
-    setTimeout(() => {
-      handleLogin(selectedRole);
-      navigate('/');
-      setLoading(false);
-    }, 800);
+    setError('');
+    setSuccess('');
+
+    try {
+      if (isRegistering) {
+        // Registration logic
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          setLoading(false);
+          return;
+        }
+
+        await register({
+          username,
+          password,
+          role: selectedRole
+        });
+        
+        setSuccess('Account created successfully! You can now log in.');
+        setIsRegistering(false);
+        setPassword('');
+      } else {
+        // Login logic
+        const response = await login({
+          username,
+          password,
+          role: selectedRole
+        });
+        
+        handleLogin(selectedRole);
+        navigate(`/${selectedRole}-dashboard`);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || (isRegistering ? 'Registration failed' : 'Login failed'));
+    }
+    
+    setLoading(false);
+  };
+
+  const toggleMode = () => {
+    setIsRegistering(!isRegistering);
+    setError('');
+    setSuccess('');
+    setPassword('');
+    setConfirmPassword('');
   };
 
   return (
@@ -77,13 +121,29 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Right side - login form */}
+      {/* Right side - login/register form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
-            <p className="text-gray-600 mt-2">Sign in to continue to LearningHub</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isRegistering ? 'Create Account' : 'Welcome Back'}
+            </h1>
+            <p className="text-gray-600 mt-2">
+              {isRegistering ? 'Sign up for LearningHub' : 'Sign in to continue to LearningHub'}
+            </p>
           </div>
+          
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          
+          {success && (
+            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+              {success}
+            </div>
+          )}
           
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
@@ -105,7 +165,9 @@ const LoginPage = () => {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                <a href="#" className="text-sm text-blue-600 hover:text-blue-800">Forgot password?</a>
+                {!isRegistering && (
+                  <a href="#" className="text-sm text-blue-600 hover:text-blue-800">Forgot password?</a>
+                )}
               </div>
               <div className="relative">
                 <input
@@ -123,8 +185,30 @@ const LoginPage = () => {
               </div>
             </div>
             
+            {isRegistering && (
+              <div className="mb-6">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Confirm your password"
+                    required
+                  />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+              </div>
+            )}
+            
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Login As</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {isRegistering ? 'Register As' : 'Login As'}
+              </label>
               <div className="grid grid-cols-3 gap-4">
                 <RoleOption 
                   id="student"
@@ -161,12 +245,21 @@ const LoginPage = () => {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               ) : null}
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Processing...' : (isRegistering ? 'Sign Up' : 'Sign In')}
             </button>
           </form>
           
           <div className="mt-8 text-center">
-            <p className="text-gray-600">Don't have an account? <a href="#" className="text-blue-600 font-medium hover:text-blue-800">Sign up</a></p>
+            <p className="text-gray-600">
+              {isRegistering ? 'Already have an account? ' : "Don't have an account? "}
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="text-blue-600 font-medium hover:text-blue-800"
+              >
+                {isRegistering ? 'Sign in' : 'Sign up'}
+              </button>
+            </p>
           </div>
         </div>
       </div>
