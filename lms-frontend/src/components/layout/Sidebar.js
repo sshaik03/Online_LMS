@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Book, FileText, MessageSquare, CalendarDays, BarChart2, Users, Settings, LogOut, ChevronRight } from 'lucide-react';
+import { Home, Book, FileText, MessageSquare, CalendarDays, BarChart2, Users, LogOut, ChevronRight } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 
 const Sidebar = () => {
@@ -13,7 +13,6 @@ const Sidebar = () => {
     { id: 'courses', label: 'Courses', icon: <Book size={collapsed ? 24 : 20} />, path: '/courses' },
     { id: 'assignments', label: 'Assignments', icon: <FileText size={collapsed ? 24 : 20} />, path: '/assignments' },
     { id: 'discussions', label: 'Discussions', icon: <MessageSquare size={collapsed ? 24 : 20} />, path: '/discussions' },
-    { id: 'calendar', label: 'Calendar', icon: <CalendarDays size={collapsed ? 24 : 20} />, path: '/calendar' }
   ];
   
   // Add analytics for instructors and admins
@@ -74,13 +73,6 @@ const Sidebar = () => {
       
       <div className="p-4">
         <div className="border-t border-gray-700 pt-4 space-y-2">
-          <button 
-            onClick={() => navigate('/settings')}
-            className={`w-full flex items-center px-3 py-2 rounded-lg text-left text-gray-400 hover:bg-gray-700 hover:text-white transition-colors ${collapsed ? 'justify-center' : ''}`}
-          >
-            <Settings size={collapsed ? 24 : 20} className={`${collapsed ? '' : 'mr-3'}`} />
-            {!collapsed && <span>Settings</span>}
-          </button>
           <button 
             onClick={handleLogoutClick}
             className={`w-full flex items-center px-3 py-2 rounded-lg text-left text-gray-400 hover:bg-gray-700 hover:text-white transition-colors ${collapsed ? 'justify-center' : ''}`}

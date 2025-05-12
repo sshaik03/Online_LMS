@@ -14,10 +14,7 @@ import Dashboard from './components/dashboard/Dashboard';
 import CoursesPage from './components/courses/CoursesPage';
 import AssignmentsPage from './components/assignments/AssignmentsPage';
 import DiscussionsPage from './components/discussions/DiscussionsPage';
-import CalendarPage from './components/calendar/CalendarPage';
 import AnalyticsPage from './components/analytics/AnalyticsPage';
-import SettingsPage from './components/settings/SettingsPage';
-
 // CSS
 import './App.css';
 
@@ -89,24 +86,10 @@ const App = () => {
               </MainLayout>
             </ProtectedRoute>
           } />
-          <Route path="/calendar" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <CalendarPage />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
           <Route path="/analytics" element={
             <ProtectedRoute>
               <MainLayout>
                 <AnalyticsPage />
-              </MainLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <MainLayout>
-                <SettingsPage />
               </MainLayout>
             </ProtectedRoute>
           } />
