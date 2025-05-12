@@ -1,4 +1,5 @@
 /node_modules
-node_modules/
+
+/lms-frontend/node_modules
+
 .env
-Online_LMS\node_modules
