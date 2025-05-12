@@ -25,11 +25,19 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lms', {
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['student', 'instructor', 'admin'], default: 'student' },
+  role: { type: String, enum: ['student', 'instructor'], default: 'student' },
   createdAt: { type: Date, default: Date.now }
 });
 
 const User = mongoose.model('User', userSchema);
+
+// Import routes
+const discussionRoutes = require('./routes/discussions');
+
+// Import models
+require('./models/User');
+require('./models/Course'); // Add this line
+require('./models/Discussion');
 
 // Routes
 app.get('/', (req, res) => {
@@ -110,7 +118,16 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Use routes
+app.use('/api/discussions', discussionRoutes);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// CORS configuration
+app.use(cors({
+  origin: 'http://localhost:3000', // Frontend URL
+  credentials: true
+}));

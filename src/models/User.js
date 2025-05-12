@@ -30,4 +30,7 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
-module.exports = mongoose.model('User', userSchema);
+// Change this line (likely around line 33):
+// From: module.exports = mongoose.model('User', userSchema);
+// To:
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);
