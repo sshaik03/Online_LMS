@@ -3,8 +3,13 @@ import { Bell, Search } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
 
 const Header = () => {
-  const { userRole } = useUser();
+  const { userRole, username } = useUser();
   const roleName = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+  const initials = username
+    .split(' ')
+    .map(name => name.charAt(0))
+    .join('')
+    .toUpperCase();
   
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
@@ -33,12 +38,11 @@ const Header = () => {
           
           <div className="flex items-center">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white">
-              <span className="font-medium">JD</span>
+              <span className="font-medium">{initials}</span>
             </div>
             <div className="ml-3 hidden md:block">
-              <div className="font-medium text-gray-800">John Doe</div>
+              <div className="font-medium text-gray-800">{username}</div>
               <div className="text-sm text-gray-500 flex items-center">
-                <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
                 {roleName}
               </div>
             </div>

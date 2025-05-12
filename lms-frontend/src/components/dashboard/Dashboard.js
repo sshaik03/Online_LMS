@@ -6,7 +6,7 @@ import { mockCourses, mockAnnouncements, mockAssignments, mockCalendarEvents, mo
 // Dashboard Component
 const Dashboard = () => {
   const [currentTab, setCurrentTab] = useState('overview');
-  const { userRole } = useUser();
+  const { userRole, username } = useUser();
   
   return (
     <div className="space-y-8">
@@ -14,7 +14,7 @@ const Dashboard = () => {
       <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md overflow-hidden">
         <div className="p-8 flex flex-col md:flex-row gap-6 justify-between items-center">
           <div className="text-white">
-            <h2 className="text-2xl font-bold">Welcome back, John!</h2>
+            <h2 className="text-2xl font-bold">Welcome back, {username?.charAt(0).toUpperCase() + username?.slice(1)}!</h2>
             <p className="mt-2 opacity-90">
               {userRole === 'student' 
                 ? 'You have 3 assignments due this week. Keep up the good work!'
