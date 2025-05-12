@@ -2,15 +2,172 @@ import React, { useState, useEffect } from 'react';
 import { discussionApi } from '../../services/api';
 import { useUser } from '../../context/UserContext';
 import NewDiscussionModal from './NewDiscussionModal';
+import axios from 'axios';
 
-const DiscussionItem = ({ discussion }) => {
+// Discussion Detail Component
+const DiscussionDetail = ({ discussion, onClose, onReplyAdded }) => {
+  const [replyContent, setReplyContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const { userRole } = useUser();
+
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const handleSubmitReply = async (e) => {
+    e.preventDefault();
+    
+    if (!replyContent.trim()) {
+      setError('Reply content cannot be empty');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError('');
+      
+      // Get the user object from localStorage and extract the token
+      const userData = JSON.parse(localStorage.getItem('user'));
+      if (!userData || !userData.token) {
+        setError('Authentication required');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Use axios directly with authentication header
+      const response = await axios.post(`http://localhost:3001/api/discussions/${discussion._id}/reply`, {
+        content: replyContent
+      }, {
+        headers: {
+          Authorization: `Bearer ${userData.token}`
+        }
+      });
+      
+      setIsSubmitting(false);
+      setReplyContent('');
+      
+      // Notify parent component about the new reply
+      if (onReplyAdded) {
+        onReplyAdded(response.data);
+      }
+    } catch (err) {
+      setIsSubmitting(false);
+      setError(err.response?.data?.message || 'Failed to add reply');
+      console.error('Error adding reply:', err);
+    }
+  };
+
+  return (
+    <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+      {/* Header with close button */}
+      <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-900">{discussion.title}</h2>
+        <button 
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      {/* Main discussion content */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex justify-between items-start mb-4">
+          <span className="text-sm text-gray-600">
+            Posted by {discussion.author?.username || 'Anonymous'} on {formatDate(discussion.createdAt)}
+          </span>
+          {discussion.tags && discussion.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {discussion.tags.map((tag, index) => (
+                <span key={index} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <p className="text-gray-800 whitespace-pre-line">{discussion.content}</p>
+      </div>
+      
+      {/* Replies section */}
+      <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <h3 className="font-medium text-gray-900">
+          {discussion.replies?.length || 0} {discussion.replies?.length === 1 ? 'Reply' : 'Replies'}
+        </h3>
+      </div>
+      
+      <div className="divide-y divide-gray-200">
+        {discussion.replies && discussion.replies.length > 0 ? (
+          discussion.replies.map((reply, index) => (
+            <div key={index} className="p-6">
+              <div className="flex justify-between items-start mb-2">
+                <span className="font-medium text-gray-900">
+                  {reply.author?.username || 'Anonymous'}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {formatDate(reply.createdAt)}
+                </span>
+              </div>
+              <p className="text-gray-800 whitespace-pre-line">{reply.content}</p>
+            </div>
+          ))
+        ) : (
+          <div className="p-6 text-center text-gray-500">
+            No replies yet. Be the first to reply!
+          </div>
+        )}
+      </div>
+      
+      {/* Reply form */}
+      <div className="p-6 bg-gray-50">
+        <h3 className="font-medium text-gray-900 mb-3">Add a Reply</h3>
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmitReply}>
+          <textarea
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            rows="4"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Write your reply here..."
+            required
+          ></textarea>
+          
+          <div className="mt-3 flex justify-end">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Reply'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const DiscussionItem = ({ discussion, onClick }) => {
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   return (
-    <div className="p-4 border-b border-gray-200 hover:bg-gray-50">
+    <div 
+      className="p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer"
+      onClick={onClick}
+    >
       <div className="flex justify-between items-start">
         <div>
           <h3 className="text-lg font-medium text-gray-900">{discussion.title}</h3>
@@ -44,8 +201,9 @@ const DiscussionsPage = () => {
   const [discussions, setDiscussions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false); // Make sure this is false
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedDiscussion, setSelectedDiscussion] = useState(null);
   
   useEffect(() => {
     fetchDiscussions();
@@ -94,6 +252,28 @@ const DiscussionsPage = () => {
     }
   };
 
+  const handleDiscussionClick = async (discussion) => {
+    try {
+      // Fetch the full discussion with replies
+      const response = await discussionApi.getById(discussion._id);
+      setSelectedDiscussion(response.data);
+    } catch (err) {
+      console.error('Error fetching discussion details:', err);
+      // Show the discussion anyway with what we have
+      setSelectedDiscussion(discussion);
+    }
+  };
+
+  const handleReplyAdded = (updatedDiscussion) => {
+    // Update the selected discussion with the new reply
+    setSelectedDiscussion(updatedDiscussion);
+    
+    // Also update the discussion in the list
+    setDiscussions(discussions.map(disc => 
+      disc._id === updatedDiscussion._id ? updatedDiscussion : disc
+    ));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -112,7 +292,6 @@ const DiscussionsPage = () => {
           </select>
           <button
             onClick={() => setIsModalOpen(true)}
-            // Remove the disabled attribute
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Create New Discussion
@@ -120,7 +299,18 @@ const DiscussionsPage = () => {
         </div>
       </div>
 
-      {/* Remove the authentication warning */}
+      {/* Selected Discussion Detail View */}
+      {selectedDiscussion && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DiscussionDetail 
+              discussion={selectedDiscussion} 
+              onClose={() => setSelectedDiscussion(null)}
+              onReplyAdded={handleReplyAdded}
+            />
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -170,7 +360,10 @@ const DiscussionsPage = () => {
           <ul className="divide-y divide-gray-200">
             {discussions.map((discussion) => (
               <li key={discussion._id}>
-                <DiscussionItem discussion={discussion} />
+                <DiscussionItem 
+                  discussion={discussion} 
+                  onClick={() => handleDiscussionClick(discussion)}
+                />
               </li>
             ))}
           </ul>

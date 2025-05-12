@@ -213,12 +213,143 @@ const DashboardAssignments = () => {
 
 // Dashboard Discussions Tab
 const DashboardDiscussions = () => {
+  const [selectedDiscussion, setSelectedDiscussion] = useState(null);
+  const [replyContent, setReplyContent] = useState('');
+  
+  const handleDeleteDiscussion = async (id) => {
+    try {
+      // In a real app, you would call your API
+      // await axios.delete(`/api/discussions/${id}`);
+      
+      // For now, just show an alert
+      alert(`Discussion ${id} deleted successfully!`);
+      
+      // You would typically refresh the discussions list here
+    } catch (error) {
+      console.error('Error deleting discussion:', error);
+      alert('Failed to delete discussion');
+    }
+  };
+  
+  const handleReplySubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!replyContent.trim()) {
+      alert('Reply cannot be empty');
+      return;
+    }
+    
+    try {
+      // In a real app, you would call your API
+      // await axios.post(`/api/discussions/${selectedDiscussion.id}/reply`, {
+      //   content: replyContent
+      // });
+      
+      // For now, just show an alert
+      alert(`Reply added to discussion ${selectedDiscussion.id}`);
+      
+      // Clear the form and close the modal
+      setReplyContent('');
+      setSelectedDiscussion(null);
+      
+      // You would typically refresh the discussions list here
+    } catch (error) {
+      console.error('Error adding reply:', error);
+      alert('Failed to add reply');
+    }
+  };
+  
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {selectedDiscussion && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-semibold">{selectedDiscussion.title}</h3>
+                <button 
+                  onClick={() => setSelectedDiscussion(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-sm text-gray-500 mb-2">
+                  Course: {selectedDiscussion.course} • Replies: {selectedDiscussion.replies}
+                </p>
+                <p className="text-gray-700">
+                  This is where the discussion content would appear. In a real implementation,
+                  you would fetch and display the full discussion content and existing replies.
+                </p>
+              </div>
+              
+              <form onSubmit={handleReplySubmit}>
+                <div className="mb-4">
+                  <label htmlFor="reply" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Reply
+                  </label>
+                  <textarea
+                    id="reply"
+                    rows="4"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    placeholder="Write your reply here..."
+                    required
+                  ></textarea>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDiscussion(null)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Submit Reply
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="font-medium text-gray-900">Recent Discussions</h3>
+          <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            New Discussion
+          </button>
+        </div>
         <div className="divide-y divide-gray-200">
           {mockDiscussions.map(discussion => (
-            <DiscussionItem key={discussion.id} discussion={discussion} />
+            <div key={discussion.id} className="p-4 hover:bg-gray-50">
+              <div className="flex justify-between">
+                <div 
+                  className="cursor-pointer flex-grow"
+                  onClick={() => setSelectedDiscussion(discussion)}
+                >
+                  <h4 className="font-medium text-gray-900 mb-1">{discussion.title}</h4>
+                  <p className="text-sm text-gray-500">
+                    Course: {discussion.course} • Replies: {discussion.replies} • Last activity: {discussion.lastActivity}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => handleDeleteDiscussion(discussion.id)}
+                  className="text-red-500 hover:text-red-700 p-1"
+                  title="Delete discussion"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </div>
