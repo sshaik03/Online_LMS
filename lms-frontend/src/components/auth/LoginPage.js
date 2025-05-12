@@ -87,7 +87,7 @@ const LoginPage = () => {
           role: selectedRole
         });
         
-        handleLogin(selectedRole);
+        handleLogin(response.user); // <-- Pass the user object here
         navigate(`/${selectedRole}-dashboard`);
       }
     } catch (err) {
@@ -165,9 +165,6 @@ const LoginPage = () => {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-                {!isRegistering && (
-                  <a href="#" className="text-sm text-blue-600 hover:text-blue-800">Forgot password?</a>
-                )}
               </div>
               <div className="relative">
                 <input
@@ -209,7 +206,7 @@ const LoginPage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {isRegistering ? 'Register As' : 'Login As'}
               </label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <RoleOption 
                   id="student"
                   label="Student"
@@ -223,13 +220,6 @@ const LoginPage = () => {
                   icon={<Book className="h-5 w-5" />}
                   selected={selectedRole === 'instructor'}
                   onChange={() => setSelectedRole('instructor')}
-                />
-                <RoleOption 
-                  id="admin"
-                  label="Admin"
-                  icon={<Settings className="h-5 w-5" />}
-                  selected={selectedRole === 'admin'}
-                  onChange={() => setSelectedRole('admin')}
                 />
               </div>
             </div>
