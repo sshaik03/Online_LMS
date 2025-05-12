@@ -12,6 +12,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import LoginPage from './components/auth/LoginPage';
 import Dashboard from './components/dashboard/Dashboard';
 import CoursesPage from './components/courses/CoursesPage';
+import InstructorCoursesPage from './components/courses/InstructorCoursesPage';
 import AssignmentsPage from './components/assignments/AssignmentsPage';
 import DiscussionsPage from './components/discussions/DiscussionsPage';
 import AnalyticsPage from './components/analytics/AnalyticsPage';
@@ -68,7 +69,7 @@ const App = () => {
           <Route path="/courses" element={
             <ProtectedRoute>
               <MainLayout>
-                <CoursesPage />
+                <RoleBasedCourses />
               </MainLayout>
             </ProtectedRoute>
           } />
@@ -99,6 +100,17 @@ const App = () => {
     </UserProvider>
     </ErrorBoundary>
   );
+};
+
+const RoleBasedCourses = () => {
+  const { userRole } = useUser();
+
+  // Return appropriate courses based on user role
+  if (userRole == 'student') {
+    return <CoursesPage />;
+  } else if (userRole == 'instructor') {
+    return <InstructorCoursesPage />;
+  }
 };
 
 export default App;
