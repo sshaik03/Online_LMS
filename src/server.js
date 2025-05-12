@@ -31,6 +31,14 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
+// Import routes
+const discussionRoutes = require('./routes/discussions');
+
+// Import models
+require('./models/User');
+require('./models/Course'); // Add this line
+require('./models/Discussion');
+
 // Routes
 app.get('/', (req, res) => {
   res.send('LMS API is running');
@@ -110,7 +118,16 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Use routes
+app.use('/api/discussions', discussionRoutes);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// CORS configuration
+app.use(cors({
+  origin: 'http://localhost:3000', // Frontend URL
+  credentials: true
+}));
