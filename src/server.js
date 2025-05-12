@@ -5,6 +5,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+// Import Routes
+const assignmentRoutes = require('./routes/assignmentRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+const studentRoutes = require('./routes/studentRoutes');
+
+// Import Models
+const User = require('./models/User');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -16,22 +24,14 @@ app.use(express.json());
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lms', {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  useCreateIndex: true,
+  useFindAndModify: false
 })
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-// User model
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: ['student', 'instructor', 'admin'], default: 'student' },
-  createdAt: { type: Date, default: Date.now }
-});
-
-const User = mongoose.model('User', userSchema);
-
-// Routes
+// Basic API health check route
 app.get('/', (req, res) => {
   res.send('LMS API is running');
 });
@@ -39,23 +39,28 @@ app.get('/', (req, res) => {
 // Register endpoint
 app.post('/api/auth/register', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, role, email } = req.body;
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Username already exists' });
+    // Validate input
+    if (!username || !password || !email) {
+      return res.status(400).json({ message: 'Please provide username, password, and email' });
     }
     
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      if (existingUser.username === username) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+      return res.status(400).json({ message: 'Email already in use' });
+    }
     
     // Create new user
     const user = new User({
       username,
-      password: hashedPassword,
-      role
+      email,
+      password, // Hashing is handled in the User model pre-save hook
+      role: role || 'student'
     });
     
     await user.save();
@@ -78,8 +83,8 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
     
-    // Check role
-    if (user.role !== role) {
+    // Check role if specified
+    if (role && user.role !== role) {
       return res.status(400).json({ message: `You are not registered as a ${role}` });
     }
     
@@ -101,6 +106,7 @@ app.post('/api/auth/login', async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
+        email: user.email,
         role: user.role
       }
     });
@@ -108,6 +114,17 @@ app.post('/api/auth/login', async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+});
+
+// API Routes
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/students', studentRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Server error', error: err.message });
 });
 
 // Start server
