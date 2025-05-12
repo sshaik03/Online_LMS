@@ -19,8 +19,8 @@ exports.getAllAssignments = async (req, res) => {
       const enrolledCourses = await Course.find({ students: req.user.id }).select('_id');
       const courseIds = enrolledCourses.map(course => course._id);
       filter.courseId = { $in: courseIds };
-    } else if (req.user.role === 'instructor') {
-      // Instructors should only see assignments they created
+    } else if (req.user.role === 'teacher') {
+      // teachers should only see assignments they created
       filter.createdBy = req.user.id;
     }
     
@@ -95,8 +95,8 @@ exports.getAssignmentById = async (req, res) => {
       return res.json(assignmentObj);
     }
     
-    // For instructors, check if they created the assignment
-    if (req.user.role === 'instructor' && assignment.createdBy.toString() !== req.user.id) {
+    // For teachers, check if they created the assignment
+    if (req.user.role === 'teacher' && assignment.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You do not have access to this assignment' });
     }
     
@@ -110,20 +110,20 @@ exports.getAssignmentById = async (req, res) => {
 // Create new assignment
 exports.createAssignment = async (req, res) => {
   try {
-    // Only instructors and admins can create assignments
-    if (req.user.role !== 'instructor' && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only instructors can create assignments' });
+    // Only teachers and admins can create assignments
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only teachers can create assignments' });
     }
     
     const { title, description, courseId, points, dueDate, type, attachments } = req.body;
     
-    // Validate course exists and user is the instructor
+    // Validate course exists and user is the teacher
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
     
-    if (req.user.role === 'instructor' && course.instructor.toString() !== req.user.id) {
+    if (req.user.role === 'teacher' && course.teacher.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You can only create assignments for courses you teach' });
     }
     
@@ -171,7 +171,7 @@ exports.updateAssignment = async (req, res) => {
     }
     
     // Check permissions - only the creator or admin can update
-    if (req.user.role === 'instructor' && assignment.createdBy.toString() !== req.user.id) {
+    if (req.user.role === 'teacher' && assignment.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You can only update your own assignments' });
     }
     
@@ -206,7 +206,7 @@ exports.deleteAssignment = async (req, res) => {
     }
     
     // Check permissions - only the creator or admin can delete
-    if (req.user.role === 'instructor' && assignment.createdBy.toString() !== req.user.id) {
+    if (req.user.role === 'teacher' && assignment.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You can only delete your own assignments' });
     }
     

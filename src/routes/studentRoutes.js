@@ -9,7 +9,7 @@ router.use(authMiddleware);
 // Get a student's own submissions
 router.get('/submissions', submissionController.getStudentSubmissions);
 
-// Get another student's submissions (for instructors)
+// Get another student's submissions (for teachers)
 router.get('/:studentId/submissions', submissionController.getStudentSubmissions);
 
 module.exports = router;

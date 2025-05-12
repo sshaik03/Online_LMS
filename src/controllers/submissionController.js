@@ -2,7 +2,7 @@ const Assignment = require('../models/Assignment');
 const AssignmentSubmission = require('../models/AssignmentSubmission');
 const Course = require('../models/Course');
 
-// Get all submissions for an assignment (instructor view)
+// Get all submissions for an assignment (teacher view)
 exports.getSubmissionsByAssignment = async (req, res) => {
   try {
     const { assignmentId } = req.params;
@@ -13,8 +13,8 @@ exports.getSubmissionsByAssignment = async (req, res) => {
       return res.status(404).json({ message: 'Assignment not found' });
     }
     
-    // Check if the instructor has permission to view submissions
-    if (req.user.role === 'instructor' && assignment.createdBy.toString() !== req.user.id) {
+    // Check if the teacher has permission to view submissions
+    if (req.user.role === 'teacher' && assignment.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You can only view submissions for your own assignments' });
     }
     
@@ -31,7 +31,7 @@ exports.getSubmissionsByAssignment = async (req, res) => {
 // Get a student's submissions (student view)
 exports.getStudentSubmissions = async (req, res) => {
   try {
-    // If requesting other student's submissions, must be instructor or admin
+    // If requesting other student's submissions, must be teacher or admin
     const studentId = req.params.studentId || req.user.id;
     
     if (studentId !== req.user.id && req.user.role === 'student') {
@@ -69,7 +69,7 @@ exports.getSubmission = async (req, res) => {
       return res.status(403).json({ message: 'You can only view your own submissions' });
     }
     
-    if (req.user.role === 'instructor') {
+    if (req.user.role === 'teacher') {
       const assignment = await Assignment.findById(submission.assignmentId);
       if (assignment.createdBy.toString() !== req.user.id) {
         return res.status(403).json({ message: 'You can only view submissions for your own assignments' });
@@ -152,7 +152,7 @@ exports.submitAssignment = async (req, res) => {
   }
 };
 
-// Grade a submission (instructor only)
+// Grade a submission (teacher only)
 exports.gradeSubmission = async (req, res) => {
   try {
     const { submissionId } = req.params;
@@ -163,9 +163,9 @@ exports.gradeSubmission = async (req, res) => {
       return res.status(400).json({ message: 'Grade is required' });
     }
     
-    // Only instructors and admins can grade submissions
-    if (req.user.role !== 'instructor' && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only instructors can grade submissions' });
+    // Only teachers and admins can grade submissions
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only teachers can grade submissions' });
     }
     
     const submission = await AssignmentSubmission.findById(submissionId)
@@ -175,9 +175,9 @@ exports.gradeSubmission = async (req, res) => {
       return res.status(404).json({ message: 'Submission not found' });
     }
     
-    // Check if the instructor created the assignment
+    // Check if the teacher created the assignment
     const assignment = await Assignment.findById(submission.assignmentId);
-    if (req.user.role === 'instructor' && assignment.createdBy.toString() !== req.user.id) {
+    if (req.user.role === 'teacher' && assignment.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You can only grade submissions for your own assignments' });
     }
     

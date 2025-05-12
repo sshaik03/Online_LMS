@@ -12,15 +12,15 @@ exports.getAllCourses = async (req, res) => {
     if (req.user.role === 'student') {
       // Students see courses they're enrolled in
       courses = await Course.find({ students: req.user.id, isActive: true })
-        .populate('instructor', 'username');
-    } else if (req.user.role === 'instructor') {
-      // Instructors see courses they teach
-      courses = await Course.find({ instructor: req.user.id })
-        .populate('instructor', 'username');
+        .populate('teacher', 'username');
+    } else if (req.user.role === 'teacher') {
+      // teachers see courses they teach
+      courses = await Course.find({ teacher: req.user.id })
+        .populate('teacher', 'username');
     } else {
       // Admins see all courses
       courses = await Course.find()
-        .populate('instructor', 'username');
+        .populate('teacher', 'username');
     }
     
     // Add student count to each course
@@ -45,7 +45,7 @@ exports.getAllCourses = async (req, res) => {
 exports.getCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
-      .populate('instructor', 'username email')
+      .populate('teacher', 'username email')
       .populate('students', 'username email');
     
     if (!course) {
@@ -57,8 +57,8 @@ exports.getCourseById = async (req, res) => {
       return res.status(403).json({ message: 'You are not enrolled in this course' });
     }
     
-    if (req.user.role === 'instructor' && course.instructor._id.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'You are not the instructor of this course' });
+    if (req.user.role === 'teacher' && course.teacher._id.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'You are not the teacher of this course' });
     }
     
     res.json(course);
@@ -71,9 +71,9 @@ exports.getCourseById = async (req, res) => {
 // Create a new course
 exports.createCourse = async (req, res) => {
   try {
-    // Only instructors and admins can create courses
-    if (req.user.role !== 'instructor' && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Only instructors can create courses' });
+    // Only teachers and admins can create courses
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only teachers can create courses' });
     }
     
     const { title, description, startDate, endDate, thumbnail, colorScheme } = req.body;
@@ -84,7 +84,7 @@ exports.createCourse = async (req, res) => {
     const course = new Course({
       title,
       description,
-      instructor: req.user.id,
+      teacher: req.user.id,
       startDate,
       endDate,
       thumbnail,
@@ -111,8 +111,8 @@ exports.updateCourse = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
     
-    // Only the instructor of the course or an admin can update it
-    if (req.user.role === 'instructor' && course.instructor.toString() !== req.user.id) {
+    // Only the teacher of the course or an admin can update it
+    if (req.user.role === 'teacher' && course.teacher.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You can only update your own courses' });
     }
     
@@ -144,8 +144,8 @@ exports.deleteCourse = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
     
-    // Only the instructor of the course or an admin can delete it
-    if (req.user.role === 'instructor' && course.instructor.toString() !== req.user.id) {
+    // Only the teacher of the course or an admin can delete it
+    if (req.user.role === 'teacher' && course.teacher.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You can only delete your own courses' });
     }
     
@@ -224,8 +224,8 @@ exports.removeStudent = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
     
-    // Only the instructor of the course or an admin can remove students
-    if (req.user.role === 'instructor' && course.instructor.toString() !== req.user.id) {
+    // Only the teacher of the course or an admin can remove students
+    if (req.user.role === 'teacher' && course.teacher.toString() !== req.user.id) {
       return res.status(403).json({ message: 'You can only remove students from your own courses' });
     }
     
@@ -274,8 +274,8 @@ exports.getCourseAssignments = async (req, res) => {
       return res.status(403).json({ message: 'You are not enrolled in this course' });
     }
     
-    if (req.user.role === 'instructor' && course.instructor.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'You are not the instructor of this course' });
+    if (req.user.role === 'teacher' && course.teacher.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'You are not the teacher of this course' });
     }
     
     const assignments = await Assignment.find({ courseId: id })
