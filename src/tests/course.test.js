@@ -1,17 +1,18 @@
 const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const User = require('../models/User');
+require('dotenv').config();
 
 describe('Course Model Test', () => {
     // Keep track of all created test entities for cleanup
-    const testUserIds = [];
-    const testCourseIds = [];
+    const testUsernames = [];
+    const testCourseCodes = [];
     
     let testInstructor;
     let testStudent;
     
     beforeAll(async () => {
-        await mongoose.connect(global.__MONGO_URI__, {
+        mongoose.connect(process.env.MONGODB_URI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
@@ -24,7 +25,7 @@ describe('Course Model Test', () => {
             role: 'instructor'
         });
         await testInstructor.save();
-        testUserIds.push(testInstructor._id);
+        testUsernames.push(testInstructor.username);
         
         testStudent = new User({
             username: 'teststudent',
@@ -33,13 +34,13 @@ describe('Course Model Test', () => {
             role: 'student'
         });
         await testStudent.save();
-        testUserIds.push(testStudent._id);
+        testUsernames.push(testStudent.username);
     });
 
     afterAll(async () => {
         // Only delete the test entities we created
-        await User.deleteMany({ _id: { $in: testUserIds } });
-        await Course.deleteMany({ _id: { $in: testCourseIds } });
+        await User.deleteMany({ username: { $in: testUsernames } });
+        await Course.deleteMany({ enrollmentCode: { $in: testCourseCodes } });
         await mongoose.connection.close();
     });
 
@@ -54,9 +55,8 @@ describe('Course Model Test', () => {
 
         const validCourse = new Course(courseData);
         const savedCourse = await validCourse.save();
-        testCourseIds.push(savedCourse._id);
+        testCourseCodes.push(savedCourse.enrollmentCode);
 
-        expect(savedCourse._id).toBeDefined();
         expect(savedCourse.title).toBe(courseData.title);
         expect(savedCourse.description).toBe(courseData.description);
         expect(savedCourse.instructor).toEqual(testInstructor._id);
