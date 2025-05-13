@@ -16,4 +16,5 @@ module.exports = {
     },
     autoStart: false,
   },
+  coverageReporters: ['text'],
 };
