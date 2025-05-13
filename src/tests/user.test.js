@@ -36,4 +36,27 @@ describe('User Model Test', () => {
 
         expect(validUser.password).not.toBe(userData.password);
     });
+    it('should not rehash the password when updating user without changing password', async () => {
+    // First create a user
+    const userData = {
+        username: 'updateuser',
+        email: 'updateuser@test.com',
+        password: 'password123'
+    };
+    
+    const user = new User(userData);
+    await user.save();
+    testUserIDs.push(user._id);
+    
+    // Store the original hashed password
+    const originalPassword = user.password;
+    
+    // Update a field other than password
+    user.username = 'updateduserName';
+    await user.save();
+    testUserIDs.push(user._id);
+    
+    // Password should remain the same
+    expect(user.password).toBe(originalPassword);
+});
 });
