@@ -81,9 +81,9 @@ const Dashboard = () => {
 // Dashboard Overview Tab
 const DashboardOverview = ({ userRole }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-6">
       {/* Left Column */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="space-y-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard 
@@ -145,40 +145,6 @@ const DashboardOverview = ({ userRole }) => {
         </div>
       </div>
       
-      {/* Right Column */}
-      <div className="space-y-6">
-        {/* Announcements */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b border-gray-200">
-            <h3 className="font-medium text-gray-900">Announcements</h3>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {mockAnnouncements.map(announcement => (
-              <AnnouncementItem key={announcement.id} announcement={announcement} />
-            ))}
-          </div>
-          <div className="p-3 bg-gray-50 border-t border-gray-200 text-center">
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-              View All Announcements
-            </button>
-          </div>
-        </div>
-        
-        {/* Calendar Events */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="font-medium text-gray-900">Upcoming Events</h3>
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-              Calendar
-            </button>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {mockCalendarEvents.map(event => (
-              <CalendarEventItem key={event.id} event={event} />
-            ))}
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
