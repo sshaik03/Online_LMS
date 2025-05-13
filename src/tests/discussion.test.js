@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
 const Discussion = require('../models/Discussion');
 const User = require('../models/User');
+require('dotenv').config();
 
 describe('Discussion Model Test', () => {
+    const testUserIDs = [];
+    const testDiscussionIDs = [];
     let testUser;
     
     beforeAll(async () => {
-        await mongoose.connect(global.__MONGO_URI__, {
+        mongoose.connect(process.env.MONGODB_URI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
@@ -21,8 +24,11 @@ describe('Discussion Model Test', () => {
     });
 
     afterAll(async () => {
-        await User.deleteMany({});
-        await mongoose.connection.close();
+        await User.deleteMany({_id: { $in: testUserIDs } });
+        await Discussion.deleteMany({_id: { $in: testDiscussionIDs } });
+        await mongoose.connection.close().then(() => {
+            console.log('MongoDB connection closed');
+        });
     });
 
     it('should create and save a discussion successfully', async () => {
@@ -36,6 +42,7 @@ describe('Discussion Model Test', () => {
 
         const validDiscussion = new Discussion(discussionData);
         const savedDiscussion = await validDiscussion.save();
+        testDiscussionIDs.push(savedDiscussion._id);
 
         expect(savedDiscussion._id).toBeDefined();
         expect(savedDiscussion.title).toBe(discussionData.title);
@@ -70,6 +77,7 @@ describe('Discussion Model Test', () => {
 
         const discussion = new Discussion(discussionData);
         await discussion.save();
+        testDiscussionIDs.push(discussion._id);
         
         discussion.replies.push({
             content: 'This is a test reply',
@@ -77,6 +85,7 @@ describe('Discussion Model Test', () => {
         });
         
         const updatedDiscussion = await discussion.save();
+        testDiscussionIDs.push(updatedDiscussion._id);
         
         expect(updatedDiscussion.replies.length).toBe(1);
         expect(updatedDiscussion.replies[0].content).toBe('This is a test reply');
