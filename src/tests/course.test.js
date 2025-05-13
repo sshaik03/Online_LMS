@@ -5,8 +5,8 @@ require('dotenv').config();
 
 describe('Course Model Test', () => {
     // Keep track of all created test entities for cleanup
-    const testUsernames = [];
-    const testCourseCodes = [];
+    const testUserIDs = [];
+    const testCourseIDs = [];
     
     let testInstructor;
     let testStudent;
@@ -25,7 +25,7 @@ describe('Course Model Test', () => {
             role: 'instructor'
         });
         await testInstructor.save();
-        testUsernames.push(testInstructor.username);
+        testUserIDs.push(testInstructor._id);
         
         testStudent = new User({
             username: 'teststudent',
@@ -34,13 +34,13 @@ describe('Course Model Test', () => {
             role: 'student'
         });
         await testStudent.save();
-        testUsernames.push(testStudent.username);
+        testUserIDs.push(testStudent._id);
     });
 
     afterAll(async () => {
         // Only delete the test entities we created
-        await User.deleteMany({ username: { $in: testUsernames } });
-        await Course.deleteMany({ enrollmentCode: { $in: testCourseCodes } });
+        await User.deleteMany({ _id: { $in: testUserIDs } });
+        await Course.deleteMany({ _id: { $in: testCourseIDs } });
         await mongoose.connection.close();
     });
 
@@ -55,7 +55,7 @@ describe('Course Model Test', () => {
 
         const validCourse = new Course(courseData);
         const savedCourse = await validCourse.save();
-        testCourseCodes.push(savedCourse.enrollmentCode);
+        testCourseIDs.push(savedCourse._id);
 
         expect(savedCourse.title).toBe(courseData.title);
         expect(savedCourse.description).toBe(courseData.description);
@@ -80,6 +80,29 @@ describe('Course Model Test', () => {
         }
         
         expect(err).toBeInstanceOf(mongoose.Error.ValidationError);
+    });
+
+        it('should add a student to a course', async () => {
+        const courseData = {
+            title: 'Web Development',
+            description: 'Learn modern web development techniques',
+            instructor: testInstructor._id,
+            enrollmentCode: 'DEV101',
+            category: 'Computer Science'
+        };
+
+        const course = new Course(courseData);
+        await course.save();
+        // Track the course ID for cleanup
+        testCourseIDs.push(course._id);
+        
+        // Add student to the course
+        course.students.push(testStudent._id);
+        
+        const updatedCourse = await course.save();
+        
+        expect(updatedCourse.students.length).toBe(1);
+        expect(updatedCourse.students[0]).toEqual(testStudent._id);
     });
 
 });
