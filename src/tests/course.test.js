@@ -67,4 +67,19 @@ describe('Course Model Test', () => {
         expect(savedCourse.createdAt).toBeDefined();
     });
 
+    it('should fail to create a course without required fields', async () => {
+        const invalidCourse = new Course({
+            description: 'Missing title and instructor field'
+        });
+        
+        let err;
+        try {
+            await invalidCourse.save();
+        } catch (error) {
+            err = error;
+        }
+        
+        expect(err).toBeInstanceOf(mongoose.Error.ValidationError);
+    });
+
 });
