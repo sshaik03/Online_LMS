@@ -119,4 +119,35 @@ router.get('/student', auth, async (req, res) => {
   }
 });
 
+// Add this route for withdrawing from a course
+router.delete('/courses/:courseId/withdraw', auth, async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+    const userId = req.user.id;
+    
+    // Find the enrollment
+    const enrollment = await Enrollment.findOne({
+      student: userId,
+      course: courseId
+    });
+    
+    if (!enrollment) {
+      return res.status(404).json({ message: 'Enrollment not found' });
+    }
+    
+    // Delete the enrollment
+    await Enrollment.findByIdAndDelete(enrollment._id);
+    
+    // Remove student from course's students array
+    await Course.findByIdAndUpdate(courseId, {
+      $pull: { students: userId }
+    });
+    
+    return res.status(200).json({ message: 'Successfully withdrawn from course' });
+  } catch (error) {
+    console.error('Error withdrawing from course:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

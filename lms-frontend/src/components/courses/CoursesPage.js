@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Book, Plus, Check, AlertCircle } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
-import { getStudentEnrollments, updateEnrollmentStatus } from '../../services/enrollmentService';
+import { getStudentEnrollments, updateEnrollmentStatus, withdrawFromCourse } from '../../services/enrollmentService';
 import EnrollmentDialog from './EnrollmentDialog';
 
 // Course Card Component
-const CourseCard = ({ course, onDropCourse }) => {
+const CourseCard = ({ course, onWithdraw }) => {
   const getStatusBadge = (status) => {
     switch(status) {
       case 'active':
@@ -47,16 +47,17 @@ const CourseCard = ({ course, onDropCourse }) => {
             <span className="text-xs text-gray-500">{course.progress}%</span>
           </div>
         </div>
-        {course.status === 'active' && (
-          <div className="mt-4 pt-3 border-t border-gray-100">
-            <button
-              onClick={() => onDropCourse(course.id)}
-              className="text-sm text-red-600 hover:text-red-800"
-            >
-              Drop Course
-            </button>
-          </div>
-        )}
+        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between">
+          <button className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">
+            Continue Learning
+          </button>
+          <button
+            onClick={() => onWithdraw(course.id)}
+            className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+          >
+            Withdraw
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -102,6 +103,20 @@ const CoursesPage = () => {
     }, 5000);
   };
 
+  // Handle course withdrawal
+  const handleWithdrawFromCourse = async (courseId) => {
+    if (window.confirm('Are you sure you want to withdraw from this course? This action cannot be undone.')) {
+      try {
+        await withdrawFromCourse(courseId);
+        setSuccessMessage('Successfully withdrawn from the course');
+        // Refresh the course list
+        fetchEnrolledCourses();
+      } catch (error) {
+        setError('Failed to withdraw from the course. Please try again later.');
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto px-4">
       <div className="flex justify-between items-center mb-6">
@@ -144,25 +159,11 @@ const CoursesPage = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {enrolledCourses.map(course => (
-                <div key={course.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-4">
-                    <h2 className="text-xl font-semibold mb-2">{course.title}</h2>
-                    <p className="text-gray-600 mb-4">{course.description}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">
-                        {course.modules} {course.modules === 1 ? 'module' : 'modules'}
-                      </span>
-                      <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        {course.progress}% complete
-                      </span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 px-4 py-3 border-t">
-                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
-                      Continue Learning
-                    </button>
-                  </div>
-                </div>
+                <CourseCard 
+                  key={course.id} 
+                  course={course} 
+                  onWithdraw={handleWithdrawFromCourse} 
+                />
               ))}
             </div>
           )}

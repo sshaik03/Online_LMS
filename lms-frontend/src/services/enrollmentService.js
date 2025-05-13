@@ -110,3 +110,29 @@ export const enrollWithCode = async (enrollmentCode) => {
     throw error;
   }
 };
+
+// Add this function to withdraw from a course
+export const withdrawFromCourse = async (courseId) => {
+  try {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axios.delete(
+      `${API_URL}/enrollments/courses/${courseId}/withdraw`, 
+      { 
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error withdrawing from course:', error);
+    throw error;
+  }
+};
