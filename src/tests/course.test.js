@@ -41,7 +41,9 @@ describe('Course Model Test', () => {
         // Only delete the test entities we created
         await User.deleteMany({ _id: { $in: testUserIDs } });
         await Course.deleteMany({ _id: { $in: testCourseIDs } });
-        await mongoose.connection.close();
+        await mongoose.connection.close().then(() => {
+            console.log('MongoDB connection closed');
+        });    
     });
 
     it('should create and save a course successfully', async () => {

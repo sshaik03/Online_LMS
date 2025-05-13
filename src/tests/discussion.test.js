@@ -26,7 +26,9 @@ describe('Discussion Model Test', () => {
     afterAll(async () => {
         await User.deleteMany({_id: { $in: testUserIDs } });
         await Discussion.deleteMany({_id: { $in: testDiscussionIDs } });
-        await mongoose.connection.close();
+        await mongoose.connection.close().then(() => {
+            console.log('MongoDB connection closed');
+        });
     });
 
     it('should create and save a discussion successfully', async () => {
