@@ -12,10 +12,25 @@ const authHeader = () => {
 
 // Create a new course
 export const createCourse = async (courseData) => {
-  const response = await axios.post(`${API_URL}/courses`, courseData, {
-    headers: authHeader()
-  });
-  return response.data;
+  const token = localStorage.getItem('token');
+  console.log('Token being used:', token); // Add this for debugging
+  
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  try {
+    const response = await axios.post(`${API_URL}/courses`, courseData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
 };
 
 // Get all courses (public)
@@ -39,28 +54,84 @@ export const updateCourse = async (id, courseData) => {
 };
 
 // Delete course (instructor only)
-export const deleteCourse = async (id) => {
-  const response = await axios.delete(`${API_URL}/courses/${id}`, {
-    headers: authHeader()
-  });
-  return response.data;
+// Update the deleteCourse function to properly include the authentication token
+export const deleteCourse = async (courseId) => {
+  try {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axios.delete(`${API_URL}/courses/${courseId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting course:', error);
+    throw error;
+  }
+};
+
+// Update the updateCourseActiveStatus function to properly include the authentication token
+export const updateCourseActiveStatus = async (courseId, isActive) => {
+  try {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axios.patch(`${API_URL}/courses/${courseId}/status`, 
+      { isActive },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error updating course status:', error);
+    throw error;
+  }
 };
 
 // Get courses taught by instructor
+// Add this console log to debug the API call
 export const getInstructorCourses = async () => {
-  const response = await axios.get(`${API_URL}/courses/teaching/me`, {
-    headers: authHeader()
-  });
-  return response.data;
-};
-
-// Update course active status
-export const updateCourseActiveStatus = async (id, isActive) => {
-  const response = await axios.patch(`${API_URL}/courses/${id}/status`, 
-    { isActive }, 
-    { headers: authHeader() }
-  );
-  return response.data;
+  try {
+    console.log('Fetching instructor courses...');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await fetch(`${API_URL}/courses`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch courses');
+    }
+    
+    const data = await response.json();
+    console.log('Instructor courses fetched:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching instructor courses:', error);
+    throw error;
+  }
 };
 
 // Get enrolled students for a course (instructor only)
@@ -77,4 +148,31 @@ export const enrollInCourse = async (courseId) => {
     headers: authHeader()
   });
   return response.data;
+};
+
+// Add this function to verify and enroll with a course code
+export const enrollWithCode = async (enrollmentCode) => {
+  try {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axios.post(
+      `${API_URL}/enrollments/enroll-by-code`, 
+      { enrollmentCode },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error enrolling with code:', error);
+    throw error;
+  }
 };

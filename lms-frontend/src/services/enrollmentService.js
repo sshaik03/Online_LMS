@@ -33,10 +33,26 @@ export const getCourseById = async (courseId) => {
 
 // Get student enrollments
 export const getStudentEnrollments = async () => {
-  const response = await axios.get(`${API_URL}/enrollments/student`, {
-    headers: authHeader()
-  });
-  return response.data;
+  try {
+    // Get token directly from localStorage for consistency
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axios.get(`${API_URL}/enrollments/student`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching student enrollments:', error);
+    throw error;
+  }
 };
 
 // Get course enrollments (for instructors)
@@ -63,4 +79,34 @@ export const updateEnrollmentProgress = async (enrollmentId, progressData) => {
     { headers: authHeader() }
   );
   return response.data;
+};
+
+// Add this function to your enrollmentService.js file
+
+// Enroll in a course using an enrollment code
+export const enrollWithCode = async (enrollmentCode) => {
+  try {
+    // Get token directly from localStorage for consistency
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axios.post(
+      `${API_URL}/enrollments/enroll-by-code`, 
+      { enrollmentCode },
+      { 
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error enrolling with code:', error);
+    throw error;
+  }
 };

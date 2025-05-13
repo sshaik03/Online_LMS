@@ -120,8 +120,11 @@ const CourseCreationDialog = ({ isOpen, onClose, onCourseCreated }) => {
       };
       
       const response = await createCourse(formattedData);
+      console.log('API response:', response); // Debug the response
       
-      onCourseCreated(response.course);
+      // Pass the response directly to onCourseCreated
+      // The API returns the course object directly, not wrapped in a 'course' property
+      onCourseCreated(response);
       onClose();
       resetForm();
     } catch (err) {

@@ -64,159 +64,116 @@ const CourseCard = ({ course, onDropCourse }) => {
 
 // Main Courses Page Component
 const CoursesPage = () => {
-  const [courses, setCourses] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [enrollmentDialogOpen, setEnrollmentDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
-  const { userRole } = useUser();
-  
-  useEffect(() => {
-    fetchCourses();
-  }, []);
 
-  const fetchCourses = async () => {
+  // Fetch enrolled courses
+  const fetchEnrolledCourses = async () => {
     try {
       setLoading(true);
+      const courses = await getStudentEnrollments();
+      setEnrolledCourses(courses);
       setError(null);
-      
-      if (userRole === 'student') {
-        const enrollments = await getStudentEnrollments();
-        
-        // Transform data to match the component's expected format
-        const formattedCourses = enrollments.map(enrollment => ({
-          id: enrollment.id,
-          courseId: enrollment.courseId,
-          title: enrollment.title,
-          instructor: enrollment.instructor,
-          modules: enrollment.modules,
-          progress: enrollment.progress,
-          status: enrollment.status,
-          color: getRandomColor(),
-          image: enrollment.image
-        }));
-        
-        setCourses(formattedCourses);
-      }
-      // Add similar logic for instructor courses if needed
-      
     } catch (err) {
-      console.error('Error fetching courses:', err);
-      setError('Failed to load courses. Please try again later.');
+      console.error('Error fetching enrolled courses:', err);
+      setError('Failed to load your courses. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  const getRandomColor = () => {
-    const colors = [
-      'from-blue-500 to-indigo-600',
-      'from-purple-500 to-pink-600',
-      'from-emerald-500 to-teal-600',
-      'from-amber-500 to-orange-600',
-      'from-red-500 to-pink-600',
-      'from-cyan-500 to-blue-600'
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-  };
-  
-  const handleEnrollmentSuccess = () => {
-    fetchCourses();
-    setSuccessMessage('Successfully enrolled in course!');
+  // Fetch courses on component mount and after successful enrollment
+  useEffect(() => {
+    fetchEnrolledCourses();
+  }, []);
+
+  const handleEnrollmentSuccess = (course) => {
+    // Refresh the course list
+    fetchEnrolledCourses();
+    
+    setSuccessMessage(`Successfully enrolled in ${course.title}!`);
     
     // Clear success message after 5 seconds
     setTimeout(() => {
       setSuccessMessage(null);
     }, 5000);
   };
-  
-  const handleDropCourse = async (enrollmentId) => {
-    if (window.confirm('Are you sure you want to drop this course?')) {
-      try {
-        await updateEnrollmentStatus(enrollmentId, 'dropped');
-        fetchCourses();
-        setSuccessMessage('Course has been dropped');
-        
-        // Clear success message after 5 seconds
-        setTimeout(() => {
-          setSuccessMessage(null);
-        }, 5000);
-      } catch (err) {
-        console.error('Error dropping course:', err);
-        setError('Failed to drop course. Please try again.');
-      }
-    }
-  };
-  
-  const openEnrollmentDialog = () => {
-    setEnrollmentDialogOpen(true);
-  };
-  
-  const closeEnrollmentDialog = () => {
-    setEnrollmentDialogOpen(false);
-  };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">My Courses</h1>
         <button 
-          onClick={openEnrollmentDialog}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
+          onClick={() => setEnrollmentDialogOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
         >
-          <span className="mr-2">Enroll in New Course</span>
-          <Plus size={16} />
+          Enroll in a Course
         </button>
       </div>
-      
+
+      {/* Success message */}
       {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
           {successMessage}
         </div>
       )}
 
+      {/* Error message */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      
+
+      {/* Loading state */}
       {loading ? (
         <div className="text-center py-10">
-          <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your courses...</p>
-        </div>
-      ) : courses.length == 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-          <Book size={48} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
-          <p className="text-gray-600 mb-6">
-            You're not enrolled in any courses yet. Click the "Enroll in New Course" button to browse available courses.
-          </p>
-          <button
-            onClick={openEnrollmentDialog}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg inline-flex items-center"
-          >
-            <Plus size={16} className="mr-2" />
-            Enroll Now
-          </button>
+          <p>Loading your courses...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map(course => (
-            <CourseCard 
-              key={course.id} 
-              course={course} 
-              onDropCourse={handleDropCourse}
-            />
-          ))}
-        </div>
+        <>
+          {/* Course list */}
+          {enrolledCourses.length === 0 ? (
+            <div className="text-center py-10 bg-gray-50 rounded-lg">
+              <p className="text-gray-600">You are not enrolled in any courses yet.</p>
+              <p className="mt-2">Click the "Enroll in a Course" button to get started.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {enrolledCourses.map(course => (
+                <div key={course.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="p-4">
+                    <h2 className="text-xl font-semibold mb-2">{course.title}</h2>
+                    <p className="text-gray-600 mb-4">{course.description}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">
+                        {course.modules} {course.modules === 1 ? 'module' : 'modules'}
+                      </span>
+                      <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        {course.progress}% complete
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 px-4 py-3 border-t">
+                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
+                      Continue Learning
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
-      
+
+      {/* Enrollment dialog */}
       <EnrollmentDialog 
-        isOpen={enrollmentDialogOpen}
-        onClose={closeEnrollmentDialog}
-        onEnrollmentSuccess={handleEnrollmentSuccess}
+        isOpen={enrollmentDialogOpen} 
+        onClose={() => setEnrollmentDialogOpen(false)} 
+        onEnrollmentSuccess={handleEnrollmentSuccess} 
       />
     </div>
   );

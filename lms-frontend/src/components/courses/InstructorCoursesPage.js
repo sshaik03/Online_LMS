@@ -5,53 +5,71 @@ import { getInstructorCourses, deleteCourse, updateCourseActiveStatus } from '..
 import CourseCreationDialog from '../courses/CourseCreationDialog';
 
 const CourseCard = ({ course, onEdit, onDelete, onToggleStatus, onViewStudents }) => {
+  // Safely get course ID
+  const courseId = course.id || course._id || '';
+  
+  // Safely access properties with defaults
+  const title = course.title || 'Untitled Course';
+  const description = course.description || 'No description available';
+  const isActive = course.isActive || false;
+  const category = course.category || 'Other';
+  const studentCount = course.students?.length || 0;
+  
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-sm transition-shadow">
-      <div className={`h-24 bg-gradient-to-r ${getCourseBgColor(course.category)} flex items-center justify-center text-white`}>
+      <div className={`h-24 bg-gradient-to-r ${getCourseBgColor(category)} flex items-center justify-center text-white`}>
         {course.image ? (
-          <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
+          <img src={course.image} alt={title} className="w-full h-full object-cover" />
         ) : (
           <Book size={48} className="opacity-50" />
         )}
       </div>
       <div className="p-4">
         <div className="flex justify-between items-start">
-          <h4 className="font-medium text-gray-900 mb-1">{course.title}</h4>
+          <h4 className="font-medium text-gray-900 mb-1">{title}</h4>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            course.isActive 
+            isActive 
               ? 'bg-green-100 text-green-800' 
               : 'bg-gray-100 text-gray-800'
           }`}>
-            {course.isActive ? 'Active' : 'Inactive'}
+            {isActive ? 'Active' : 'Inactive'}
           </span>
         </div>
         
         <p className="text-sm text-gray-500 mb-2">
-          {course.students?.length || 0} students enrolled
+          {studentCount} students enrolled
         </p>
         
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{course.description}</p>
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{description}</p>
+        
+        {/* Display enrollment code prominently */}
+        {course.enrollmentCode && (
+          <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-100">
+            <p className="text-sm font-medium text-blue-800">Enrollment Code:</p>
+            <p className="text-lg font-bold text-blue-900">{course.enrollmentCode}</p>
+          </div>
+        )}
         
         <div className="border-t border-gray-100 pt-3 flex justify-between">
           <div className="space-x-2">
             <button
-              onClick={() => onEdit(course._id)}
+              onClick={() => onEdit(courseId)}
               className="text-blue-600 hover:text-blue-800"
               title="Edit Course"
             >
               <Edit size={16} />
             </button>
             <button
-              onClick={() => onToggleStatus(course._id, !course.isActive)}
+              onClick={() => onToggleStatus(courseId, !isActive)}
               className={`${
-                course.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-green-600 hover:text-green-800'
+                isActive ? 'text-amber-600 hover:text-amber-800' : 'text-green-600 hover:text-green-800'
               }`}
-              title={course.isActive ? 'Deactivate Course' : 'Activate Course'}
+              title={isActive ? 'Deactivate Course' : 'Activate Course'}
             >
               <Settings size={16} />
             </button>
             <button
-              onClick={() => onDelete(course._id)}
+              onClick={() => onDelete(courseId)}
               className="text-red-600 hover:text-red-800"
               title="Delete Course"
             >
@@ -61,14 +79,14 @@ const CourseCard = ({ course, onEdit, onDelete, onToggleStatus, onViewStudents }
           
           <div className="space-x-2">
             <button
-              onClick={() => onViewStudents(course._id)}
+              onClick={() => onViewStudents(courseId)}
               className="text-gray-600 hover:text-gray-800"
               title="View Enrolled Students"
             >
               <Users size={16} />
             </button>
             <button
-              onClick={() => window.location.href = `/courses/${course._id}`}
+              onClick={() => window.location.href = `/courses/${courseId}`}
               className="text-gray-600 hover:text-gray-800"
               title="Preview Course"
             >
@@ -113,24 +131,60 @@ const InstructorCoursesPage = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Fetching instructor courses...');
       const data = await getInstructorCourses();
-      setCourses(data);
+      console.log('Raw courses data received:', data);
+      
+      if (!data || !Array.isArray(data)) {
+        console.error('Invalid courses data format:', data);
+        setError('Received invalid course data format from server');
+        setCourses([]);
+        return;
+      }
+      
+      // Ensure each course has both id and _id properties
+      const formattedCourses = data.map(course => ({
+        ...course,
+        _id: course._id || course.id,
+        id: course._id || course.id
+      }));
+      
+      console.log('Formatted courses:', formattedCourses);
+      setCourses(formattedCourses);
     } catch (err) {
       console.error('Error fetching courses:', err);
       setError('Failed to load courses. Please try again later.');
+      setCourses([]);
     } finally {
       setLoading(false);
     }
   };
   
   const handleCreateCourse = (course) => {
-    setCourses([...courses, course]);
-    setSuccessMessage('Course created successfully!');
+    console.log('New course created:', course); // Add this for debugging
     
-    // Clear success message after 5 seconds
-    setTimeout(() => {
-      setSuccessMessage(null);
-    }, 5000);
+    // Make sure we're adding the course with the correct structure
+    const newCourse = {
+      ...course,
+      _id: course._id || course.id || course._id?.toString(), // Handle different ID formats
+      id: course._id || course.id || course._id?.toString(),  // Ensure both properties exist
+      students: course.students || []
+    };
+    
+    // Check if we have a valid ID before adding to courses
+    if (newCourse._id) {
+      setCourses(prevCourses => [...prevCourses, newCourse]);
+      setSuccessMessage('Course created successfully!');
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+    } else {
+      console.error('Course created but missing ID:', course);
+      setError('Course created but there was an issue displaying it. Please refresh the page.');
+    }
   };
   
   const handleEditCourse = (courseId) => {
@@ -142,7 +196,7 @@ const InstructorCoursesPage = () => {
     if (window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
       try {
         await deleteCourse(courseId);
-        setCourses(courses.filter(course => course._id !== courseId));
+        setCourses(courses.filter(course => (course._id || course.id) !== courseId));
         setSuccessMessage('Course deleted successfully!');
         
         setTimeout(() => {
@@ -161,7 +215,7 @@ const InstructorCoursesPage = () => {
       
       // Update course status in local state
       setCourses(courses.map(course => 
-        course._id === courseId 
+        (course._id || course.id) === courseId 
           ? { ...course, isActive } 
           : course
       ));
@@ -182,7 +236,13 @@ const InstructorCoursesPage = () => {
     window.location.href = `/instructor/courses/${courseId}/students`;
   };
   
-  // Filter courses by active status
+
+
+  // Add this console log to debug
+  useEffect(() => {
+    console.log("Current courses data:", courses);
+  }, [courses]);
+  
   const filteredCourses = courses.filter(course => {
     if (filterActive === 'all') return true;
     return filterActive === 'active' ? course.isActive : !course.isActive;
@@ -252,18 +312,14 @@ const InstructorCoursesPage = () => {
           <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your courses...</p>
         </div>
-      ) : filteredCourses.length === 0 ? (
+      ) : !courses || courses.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
           <Book size={48} className="mx-auto text-gray-300 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {filterActive !== 'all' 
-              ? `No ${filterActive} courses found` 
-              : "You haven't created any courses yet"}
+            You haven't created any courses yet
           </h3>
           <p className="text-gray-600 mb-6">
-            {filterActive !== 'all' 
-              ? `You don't have any ${filterActive} courses. Change the filter to see other courses.` 
-              : "Create your first course to start teaching on the platform."}
+            Create your first course to start teaching on the platform.
           </p>
           <button
             onClick={() => setShowCreateDialog(true)}
@@ -275,16 +331,21 @@ const InstructorCoursesPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map(course => (
-            <CourseCard 
-              key={course._id} 
-              course={course} 
-              onEdit={handleEditCourse}
-              onDelete={handleDeleteCourse}
-              onToggleStatus={handleToggleStatus}
-              onViewStudents={handleViewStudents}
-            />
-          ))}
+          {Array.isArray(courses) && courses.map(course => {
+            // Skip rendering if course is null or undefined
+            if (!course) return null;
+            
+            return (
+              <CourseCard 
+                key={course.id || course._id || `course-${Math.random()}`} 
+                course={course} 
+                onEdit={handleEditCourse}
+                onDelete={handleDeleteCourse}
+                onToggleStatus={handleToggleStatus}
+                onViewStudents={handleViewStudents}
+              />
+            );
+          })}
         </div>
       )}
       

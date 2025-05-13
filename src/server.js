@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
 require('dotenv').config();
 
 const app = express();
@@ -33,11 +34,15 @@ const User = mongoose.model('User', userSchema);
 
 // Import routes
 const discussionRoutes = require('./routes/discussions');
+const courseRoutes = require('./routes/courseRoutes');
+const enrollmentRoutes = require('./routes/enrollmentRoutes');
 
+app.use('/api/courses', courseRoutes);
 // Import models
 require('./models/User');
 require('./models/Course'); // Add this line
 require('./models/Discussion');
+require('./models/Enrollment');
 
 // Routes
 app.get('/', (req, res) => {
@@ -121,6 +126,9 @@ app.post('/api/auth/login', async (req, res) => {
 // Use routes
 app.use('/api/discussions', discussionRoutes);
 
+// Add course routes
+app.use('/api/courses', courseRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

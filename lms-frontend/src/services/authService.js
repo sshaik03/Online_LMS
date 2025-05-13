@@ -2,6 +2,16 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:3001/api';
 
+// Add auth header helper function
+// Update authHeader function to include Bearer token properly
+const authHeader = () => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    return { 'Authorization': `Bearer ${token}` };
+  }
+  return {};
+};
+
 // Register new user
 export const register = async (userData) => {
   const response = await axios.post(`${API_URL}/auth/register`, userData);
@@ -9,20 +19,57 @@ export const register = async (userData) => {
 };
 
 // Login user
+// Update login function to store user role
 export const login = async (credentials) => {
   const response = await axios.post(`${API_URL}/auth/login`, credentials);
   if (response.data.token) {
-    localStorage.setItem('user', JSON.stringify(response.data));
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
   }
   return response.data;
 };
 
-// Logout user
-export const logout = () => {
-  localStorage.removeItem('user');
+// Add course creation function
+// Update createCourse function with better error handling
+export const createCourse = async (courseData) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  try {
+    const response = await axios.post(`${API_URL}/courses`, courseData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Auth token:', token);
+    console.error('Error details:', error.response?.data);
+    throw error.response?.data || error;
+  }
 };
 
-// Get current user from localStorage
+// Logout user
+// Update logout function to remove both user and token
+export const logout = () => {
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+};
+
+// Update getCurrentUser to check for both user and token
+// Check if this function is correctly retrieving the user token
 export const getCurrentUser = () => {
-  return JSON.parse(localStorage.getItem('user'));
+  try {
+    const userString = localStorage.getItem('user');
+    if (userString) {
+      return JSON.parse(userString);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return null;
+  }
 };
