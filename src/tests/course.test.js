@@ -42,5 +42,29 @@ describe('Course Model Test', () => {
         await Course.deleteMany({ _id: { $in: testCourseIds } });
         await mongoose.connection.close();
     });
-    
+
+    it('should create and save a course successfully', async () => {
+        const courseData = {
+            title: 'Introduction to Node.js',
+            description: 'Learn the basics of Node.js development',
+            instructor: testInstructor._id,
+            enrollmentCode: 'NODE101',
+            category: 'Computer Science'
+        };
+
+        const validCourse = new Course(courseData);
+        const savedCourse = await validCourse.save();
+        testCourseIds.push(savedCourse._id);
+
+        expect(savedCourse._id).toBeDefined();
+        expect(savedCourse.title).toBe(courseData.title);
+        expect(savedCourse.description).toBe(courseData.description);
+        expect(savedCourse.instructor).toEqual(testInstructor._id);
+        expect(savedCourse.enrollmentCode).toBe(courseData.enrollmentCode);
+        expect(savedCourse.category).toBe(courseData.category);
+        expect(savedCourse.isActive).toBe(true); // Default value check
+        expect(savedCourse.students.length).toBe(0); // No students initially
+        expect(savedCourse.createdAt).toBeDefined();
+    });
+
 });
