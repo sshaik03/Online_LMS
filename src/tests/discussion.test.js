@@ -21,6 +21,7 @@ describe('Discussion Model Test', () => {
             password: 'password123'
         });
         await testUser.save();
+        testUserIDs.push(testUser._id);
     });
 
     afterAll(async () => {
