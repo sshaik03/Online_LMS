@@ -88,4 +88,20 @@ describe('Assignment Model Test', () => {
         expect(savedAssignment.createdAt).toBeDefined();
     });
 
+    it('should fail to create an assignment without required fields', async () => {
+        const invalidAssignment = new Assignment({
+            title: 'Incomplete Assignment',
+            // Missing required fields
+        });
+        
+        let err;
+        try {
+            await invalidAssignment.save();
+        } catch (error) {
+            err = error;
+        }
+        
+        expect(err).toBeInstanceOf(mongoose.Error.ValidationError);
+    });
+
 });
