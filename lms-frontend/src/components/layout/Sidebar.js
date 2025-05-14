@@ -15,16 +15,6 @@ const Sidebar = () => {
     { id: 'discussions', label: 'Discussions', icon: <MessageSquare size={collapsed ? 24 : 20} />, path: '/discussions' },
   ];
   
-  // Add analytics for instructors and admins
-  if (userRole === 'instructor' || userRole === 'admin') {
-    navItems.push({ id: 'analytics', label: 'Analytics', icon: <BarChart2 size={collapsed ? 24 : 20} />, path: '/analytics' });
-  }
-  
-  // Add user management for admins
-  if (userRole === 'admin') {
-    navItems.push({ id: 'users', label: 'User Management', icon: <Users size={collapsed ? 24 : 20} />, path: '/users' });
-  }
-
   const handleNavigation = (path) => {
     navigate(path);
   };
