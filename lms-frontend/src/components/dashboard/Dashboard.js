@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { CheckCircle, Clock, X, PlusCircle, HelpCircle, Award, Bookmark, Activity, Book, FileText, MessageSquare, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, Clock, X, Book, FileText, MessageSquare, ChevronRight, Activity } from 'lucide-react';
 import { useUser } from '../../context/UserContext';
-import { mockCourses, mockAnnouncements, mockAssignments, mockCalendarEvents, mockDiscussions } from '../../data/mockData';
+import { getStudentEnrollments } from '../../services/enrollmentService';
+import { getInstructorCourses } from '../../services/courseService';
+import { getAssignments } from '../../services/assignmentService';
+import axios from 'axios';
 
 // Dashboard Component
 const Dashboard = () => {
   const [currentTab, setCurrentTab] = useState('overview');
-  const { userRole, username } = useUser();
+  const { user, userRole } = useUser();
   
   return (
     <div className="space-y-8">
@@ -14,16 +17,12 @@ const Dashboard = () => {
       <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md overflow-hidden">
         <div className="p-8 flex flex-col md:flex-row gap-6 justify-between items-center">
           <div className="text-white">
-            <h2 className="text-2xl font-bold">Welcome back, {username?.charAt(0).toUpperCase() + username?.slice(1)}!</h2>
+            <h2 className="text-2xl font-bold">Welcome back, {user?.username ? user.username.charAt(0).toUpperCase() + user.username.slice(1) : 'User'}!</h2>
             <p className="mt-2 opacity-90">
-              {userRole === 'student' 
-                ? 'You have 3 assignments due this week. Keep up the good work!'
-                : userRole === 'instructor'
-                  ? 'You have 12 assignments to grade and 2 upcoming lectures.'
-                  : 'System usage is up 12% this week. View analytics for more details.'
-              }
+              Your personalized dashboard is ready for you.
             </p>
-            <button className="mt-4 bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg font-medium transition-colors">
+            <button onClick={() => window.location.href = '/courses'}
+            className="mt-4 bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg font-medium transition-colors">
               {userRole === 'student' ? 'Continue Learning' : 'View Tasks'}
             </button>
           </div>
@@ -68,7 +67,7 @@ const Dashboard = () => {
         </div>
         
         <div className="p-6">
-          {currentTab === 'overview' && <DashboardOverview userRole={userRole} />}
+          {currentTab === 'overview' && <DashboardOverview />}
           {currentTab === 'courses' && <DashboardCourses />}
           {currentTab === 'assignments' && <DashboardAssignments />}
           {currentTab === 'discussions' && <DashboardDiscussions />}
@@ -79,7 +78,76 @@ const Dashboard = () => {
 };
 
 // Dashboard Overview Tab
-const DashboardOverview = ({ userRole }) => {
+const DashboardOverview = () => {
+  const { userRole } = useUser();
+  const [stats, setStats] = useState({
+    courses: 0,
+    assignments: 0,
+    discussions: 0
+  });
+  const [courses, setCourses] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        let courseData = [];
+        
+        // Fetch courses based on user role
+        if (userRole === 'instructor') {
+          courseData = await getInstructorCourses();
+        } else {
+          courseData = await getStudentEnrollments();
+        }
+        
+        // Fetch assignments
+        const assignmentData = await getAssignments();
+        
+        // Fetch discussions count (just making a simple count request)
+        const API_URL = 'http://localhost:3001/api';
+        const token = localStorage.getItem('token');
+        const discussionsResponse = await axios.get(`${API_URL}/discussions`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        setStats({
+          courses: courseData.length || 0,
+          assignments: assignmentData.length || 0,
+          discussions: discussionsResponse.data.length || 0
+        });
+        
+        setCourses(courseData.slice(0, 2)); // Just show first 2 courses
+        setAssignments(assignmentData.slice(0, 3)); // Show first 3 assignments
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again.');
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [userRole]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded my-4">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6">
       {/* Left Column */}
@@ -88,19 +156,19 @@ const DashboardOverview = ({ userRole }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard 
             title="Courses" 
-            value={userRole === 'student' ? '4' : userRole === 'instructor' ? '6' : '24'} 
+            value={stats.courses.toString()} 
             icon={<Book />} 
             color="bg-blue-100 text-blue-600" 
           />
           <StatCard 
             title="Assignments" 
-            value={userRole === 'student' ? '12' : userRole === 'instructor' ? '18' : '86'} 
+            value={stats.assignments.toString()} 
             icon={<FileText />} 
             color="bg-purple-100 text-purple-600" 
           />
           <StatCard 
             title="Discussions" 
-            value={userRole === 'student' ? '8' : userRole === 'instructor' ? '14' : '42'} 
+            value={stats.discussions.toString()} 
             icon={<MessageSquare />} 
             color="bg-emerald-100 text-emerald-600" 
           />
@@ -112,15 +180,24 @@ const DashboardOverview = ({ userRole }) => {
             <h3 className="text-lg font-semibold text-gray-900">
               {userRole === 'student' ? 'My Courses' : 'Courses You Teach'}
             </h3>
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center">
+            <button 
+              onClick={() => window.location.href = '/courses'}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
+            >
               View All <ChevronRight size={16} />
             </button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mockCourses.slice(0, 2).map(course => (
-              <CourseCard key={course.id} course={course} />
-            ))}
+            {courses.length > 0 ? (
+              courses.map(course => (
+                <CourseCard key={course.id || course._id} course={course} />
+              ))
+            ) : (
+              <div className="col-span-2 p-6 border border-gray-200 rounded-lg text-center">
+                <p className="text-gray-500">No courses found. {userRole === 'student' ? 'Enroll in a course to get started.' : 'Create your first course to get started.'}</p>
+              </div>
+            )}
           </div>
         </div>
         
@@ -130,195 +207,247 @@ const DashboardOverview = ({ userRole }) => {
             <h3 className="text-lg font-semibold text-gray-900">
               {userRole === 'student' ? 'Upcoming Assignments' : 'Assignments to Grade'}
             </h3>
-            <button className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center">
+            <button 
+              onClick={() => window.location.href = '/assignments'}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
+            >
               View All <ChevronRight size={16} />
             </button>
           </div>
           
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="divide-y divide-gray-200">
-              {mockAssignments.map(assignment => (
-                <AssignmentItem key={assignment.id} assignment={assignment} userRole={userRole} />
-              ))}
+              {assignments.length > 0 ? (
+                assignments.map(assignment => (
+                  <AssignmentItem key={assignment._id || assignment.id} assignment={assignment} userRole={userRole} />
+                ))
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-gray-500">No assignments found.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-      
     </div>
   );
 };
 
 // Dashboard Courses Tab
 const DashboardCourses = () => {
+  const { userRole } = useUser();
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+        let data;
+        
+        if (userRole === 'instructor') {
+          data = await getInstructorCourses();
+        } else {
+          data = await getStudentEnrollments();
+        }
+        
+        setCourses(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching courses:', err);
+        setError('Failed to load courses. Please try again.');
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, [userRole]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded my-4">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockCourses.map(course => (
-          <CourseCard key={course.id} course={course} />
-        ))}
-      </div>
+      {courses.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map(course => (
+            <CourseCard key={course.id || course._id} course={course} />
+          ))}
+        </div>
+      ) : (
+        <div className="p-6 border border-gray-200 rounded-lg text-center">
+          <p className="text-gray-500">
+            No courses found. {userRole === 'student' ? 'Enroll in a course to get started.' : 'Create your first course to get started.'}
+          </p>
+          <button
+            onClick={() => window.location.href = userRole === 'student' ? '/courses' : '/courses'}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          >
+            {userRole === 'student' ? 'Browse Courses' : 'Create a Course'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
 // Dashboard Assignments Tab
 const DashboardAssignments = () => {
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { userRole } = useUser();
+
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      try {
+        setLoading(true);
+        const data = await getAssignments();
+        setAssignments(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching assignments:', err);
+        setError('Failed to load assignments. Please try again.');
+        setLoading(false);
+      }
+    };
+
+    fetchAssignments();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded my-4">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="divide-y divide-gray-200">
-          {mockAssignments.map(assignment => (
-            <AssignmentItem key={assignment.id} assignment={assignment} expanded />
-          ))}
+      {assignments.length > 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="divide-y divide-gray-200">
+            {assignments.map(assignment => (
+              <AssignmentItem key={assignment._id || assignment.id} assignment={assignment} expanded userRole={userRole} />
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="p-6 border border-gray-200 rounded-lg text-center">
+          <p className="text-gray-500">No assignments found.</p>
+          {userRole === 'instructor' && (
+            <button
+              onClick={() => window.location.href = '/assignments'}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            >
+              Create an Assignment
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
 // Dashboard Discussions Tab
 const DashboardDiscussions = () => {
-  const [selectedDiscussion, setSelectedDiscussion] = useState(null);
-  const [replyContent, setReplyContent] = useState('');
-  
-  const handleDeleteDiscussion = async (id) => {
-    try {
-      // In a real app, you would call your API
-      // await axios.delete(`/api/discussions/${id}`);
-      
-      // For now, just show an alert
-      alert(`Discussion ${id} deleted successfully!`);
-      
-      // You would typically refresh the discussions list here
-    } catch (error) {
-      console.error('Error deleting discussion:', error);
-      alert('Failed to delete discussion');
-    }
-  };
-  
-  const handleReplySubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!replyContent.trim()) {
-      alert('Reply cannot be empty');
-      return;
-    }
-    
-    try {
-      // In a real app, you would call your API
-      // await axios.post(`/api/discussions/${selectedDiscussion.id}/reply`, {
-      //   content: replyContent
-      // });
-      
-      // For now, just show an alert
-      alert(`Reply added to discussion ${selectedDiscussion.id}`);
-      
-      // Clear the form and close the modal
-      setReplyContent('');
-      setSelectedDiscussion(null);
-      
-      // You would typically refresh the discussions list here
-    } catch (error) {
-      console.error('Error adding reply:', error);
-      alert('Failed to add reply');
-    }
-  };
-  
+  const [discussions, setDiscussions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDiscussions = async () => {
+      try {
+        setLoading(true);
+        const API_URL = 'http://localhost:3001/api';
+        const token = localStorage.getItem('token');
+        
+        const response = await axios.get(`${API_URL}/discussions`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        setDiscussions(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching discussions:', err);
+        setError('Failed to load discussions. Please try again.');
+        setLoading(false);
+      }
+    };
+
+    fetchDiscussions();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded my-4">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {selectedDiscussion && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold">{selectedDiscussion.title}</h3>
-                <button 
-                  onClick={() => setSelectedDiscussion(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="mb-6">
-                <p className="text-sm text-gray-500 mb-2">
-                  Course: {selectedDiscussion.course} • Replies: {selectedDiscussion.replies}
-                </p>
-                <p className="text-gray-700">
-                  This is where the discussion content would appear. In a real implementation,
-                  you would fetch and display the full discussion content and existing replies.
-                </p>
-              </div>
-              
-              <form onSubmit={handleReplySubmit}>
-                <div className="mb-4">
-                  <label htmlFor="reply" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Reply
-                  </label>
-                  <textarea
-                    id="reply"
-                    rows="4"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="Write your reply here..."
-                    required
-                  ></textarea>
-                </div>
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDiscussion(null)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Submit Reply
-                  </button>
-                </div>
-              </form>
-            </div>
+      {discussions.length > 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="font-medium text-gray-900">Recent Discussions</h3>
+            <button 
+              onClick={() => window.location.href = '/discussions'}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              New Discussion
+            </button>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {discussions.slice(0, 5).map(discussion => (
+              <DiscussionItem key={discussion._id} discussion={discussion} />
+            ))}
           </div>
         </div>
-      )}
-      
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="font-medium text-gray-900">Recent Discussions</h3>
-          <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-            New Discussion
+      ) : (
+        <div className="p-6 border border-gray-200 rounded-lg text-center">
+          <p className="text-gray-500">No discussions found.</p>
+          <button
+            onClick={() => window.location.href = '/discussions'}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          >
+            Start a Discussion
           </button>
         </div>
-        <div className="divide-y divide-gray-200">
-          {mockDiscussions.map(discussion => (
-            <div key={discussion.id} className="p-4 hover:bg-gray-50">
-              <div className="flex justify-between">
-                <div 
-                  className="cursor-pointer flex-grow"
-                  onClick={() => setSelectedDiscussion(discussion)}
-                >
-                  <h4 className="font-medium text-gray-900 mb-1">{discussion.title}</h4>
-                  <p className="text-sm text-gray-500">
-                    Course: {discussion.course} • Replies: {discussion.replies} • Last activity: {discussion.lastActivity}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => handleDeleteDiscussion(discussion.id)}
-                  className="text-red-500 hover:text-red-700 p-1"
-                  title="Delete discussion"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -342,30 +471,63 @@ const StatCard = ({ title, value, icon, color }) => {
 
 // Course Card Component
 const CourseCard = ({ course }) => {
+  // Extract data safely with defaults
+  const title = course.title || 'Untitled Course';
+  const instructor = course.instructor || 'Unknown Instructor';
+  const description = course.description || '';
+  const progress = course.progress || 0;
+  const enrollmentCode = course.enrollmentCode;
+  const students = course.students?.length || 0;
+  const category = course.category || 'Other';
+  
+  // Dynamic color based on category (similar to your InstructorCoursesPage)
+  const getCategoryColor = (category) => {
+    const colors = {
+      'Computer Science': 'from-blue-500 to-indigo-600',
+      'Mathematics': 'from-emerald-500 to-teal-600',
+      'Business': 'from-amber-500 to-orange-600',
+      'Marketing': 'from-pink-500 to-rose-600',
+      'Ethics': 'from-purple-500 to-violet-600',
+      'Science': 'from-cyan-500 to-blue-600',
+      'Languages': 'from-lime-500 to-green-600',
+      'Arts': 'from-red-500 to-pink-600',
+      'Other': 'from-gray-500 to-gray-600'
+    };
+    
+    return colors[category] || colors['Other'];
+  };
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-      <div className={`h-24 bg-gradient-to-r ${course.color} flex items-center justify-center text-white`}>
-        {course.img ? (
-          <img src={course.img} alt={course.title} className="w-full h-full object-cover" />
-        ) : (
-          <Book size={48} className="opacity-50" />
-        )}
+      <div className={`h-24 bg-gradient-to-r ${getCategoryColor(category)} flex items-center justify-center text-white`}>
+        <Book size={48} className="opacity-50" />
       </div>
       <div className="p-4">
-        <h4 className="font-medium text-gray-900 mb-1">{course.title}</h4>
-        <p className="text-sm text-gray-500 mb-3">{course.instructor}</p>
+        <h4 className="font-medium text-gray-900 mb-1">{title}</h4>
+        <p className="text-sm text-gray-500 mb-3">
+          {typeof instructor === 'string' ? instructor : 'Unknown Instructor'}
+        </p>
         <div className="flex justify-between items-center">
-          <div className="text-xs text-gray-500">{course.enrolled} students</div>
-          <div className="flex items-center">
-            <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full" 
-                style={{ width: `${course.progress * 100}%` }}
-              ></div>
+          <div className="text-xs text-gray-500">{students} students</div>
+          {typeof progress === 'number' && (
+            <div className="flex items-center">
+              <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full" 
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <span className="text-xs text-gray-500">{progress}%</span>
             </div>
-            <span className="text-xs text-gray-500">{Math.round(course.progress * 100)}%</span>
-          </div>
+          )}
         </div>
+        
+        {/* Show enrollment code for instructors */}
+        {enrollmentCode && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500">Enrollment Code: <span className="font-medium">{enrollmentCode}</span></p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -374,6 +536,8 @@ const CourseCard = ({ course }) => {
 // Assignment Item Component
 const AssignmentItem = ({ assignment, userRole, expanded = false }) => {
   const getStatusBadge = (status) => {
+    if (!status) return null;
+    
     switch(status) {
       case 'Completed':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle size={12} className="mr-1" /> Completed</span>;
@@ -386,62 +550,30 @@ const AssignmentItem = ({ assignment, userRole, expanded = false }) => {
     }
   };
   
+  // Extract data safely with defaults
+  const title = assignment.title || 'Untitled Assignment';
+  const course = assignment.course || assignment.courseName || 'Unknown Course';
+  const type = assignment.type || '';
+  const points = assignment.points || 0;
+  const dueDate = assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date';
+  const status = assignment.status || 'Not Started';
+  
   return (
     <div className="p-4 hover:bg-gray-50">
       <div className="flex items-start justify-between">
         <div>
-          <h4 className="font-medium text-gray-900">{assignment.title}</h4>
-          <p className="text-sm text-gray-500 mt-1">{assignment.course}</p>
+          <h4 className="font-medium text-gray-900">{title}</h4>
+          <p className="text-sm text-gray-500 mt-1">{course}</p>
           {expanded && (
             <p className="text-sm text-gray-600 mt-2">
-              Type: {assignment.type} • Points: {assignment.points}
+              Type: {type} • Points: {points}
             </p>
           )}
         </div>
         <div className="flex flex-col items-end">
-          <div className="text-sm text-gray-500 mb-2">Due: {assignment.dueDate}</div>
-          {getStatusBadge(assignment.status)}
+          <div className="text-sm text-gray-500 mb-2">Due: {dueDate}</div>
+          {getStatusBadge(status)}
         </div>
-      </div>
-    </div>
-  );
-};
-
-// Announcement Item Component
-const AnnouncementItem = ({ announcement }) => {
-  const getPriorityBadge = (priority) => {
-    switch(priority) {
-      case 'high':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">High</span>;
-      case 'medium':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Medium</span>;
-      case 'low':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Low</span>;
-      default:
-        return null;
-    }
-  };
-  
-  return (
-    <div className="p-4 hover:bg-gray-50">
-      <div className="flex justify-between items-start">
-        <h4 className="font-medium text-gray-900">{announcement.title}</h4>
-        {getPriorityBadge(announcement.priority)}
-      </div>
-      <p className="text-sm text-gray-600 mt-1">{announcement.content}</p>
-      <div className="text-xs text-gray-500 mt-2">{announcement.date}</div>
-    </div>
-  );
-};
-
-// Calendar Event Item Component
-const CalendarEventItem = ({ event }) => {
-  return (
-    <div className="p-4 hover:bg-gray-50">
-      <h4 className="font-medium text-gray-900">{event.title}</h4>
-      <div className="flex justify-between items-center mt-1">
-        <p className="text-sm text-gray-500">{event.course}</p>
-        <p className="text-sm text-gray-500">{event.date}</p>
       </div>
     </div>
   );
@@ -449,21 +581,24 @@ const CalendarEventItem = ({ event }) => {
 
 // Discussion Item Component
 const DiscussionItem = ({ discussion }) => {
+  // Extract data safely with defaults
+  const title = discussion.title || 'Untitled Discussion';
+  const courseTitle = discussion.course?.title || 'Unknown Course';
+  const replies = discussion.replies?.length || 0;
+  const lastActivity = discussion.updatedAt ? new Date(discussion.updatedAt).toLocaleDateString() : 'Unknown';
+  
   return (
     <div className="p-4 hover:bg-gray-50">
       <div className="flex justify-between items-start">
         <div>
           <h4 className="font-medium text-gray-900 flex items-center">
-            {discussion.title}
-            {discussion.unread && (
-              <span className="ml-2 w-2 h-2 bg-blue-600 rounded-full"></span>
-            )}
+            {title}
           </h4>
-          <p className="text-sm text-gray-500 mt-1">{discussion.course}</p>
+          <p className="text-sm text-gray-500 mt-1">{courseTitle}</p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-600">{discussion.replies} replies</div>
-          <div className="text-xs text-gray-500 mt-1">{discussion.lastActivity}</div>
+          <div className="text-sm text-gray-600">{replies} replies</div>
+          <div className="text-xs text-gray-500 mt-1">Last activity: {lastActivity}</div>
         </div>
       </div>
     </div>
