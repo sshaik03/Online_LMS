@@ -36,13 +36,14 @@ const User = mongoose.model('User', userSchema);
 const discussionRoutes = require('./routes/discussions');
 const courseRoutes = require('./routes/courseRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
+const assignmentRoutes = require('./routes/assignmentRoutes');
 
-app.use('/api/courses', courseRoutes);
 // Import models
 require('./models/User');
-require('./models/Course'); // Add this line
+require('./models/Course');
 require('./models/Discussion');
 require('./models/Enrollment');
+// No need to require Assignment model as it's defined in the routes file
 
 // Routes
 app.get('/', (req, res) => {
@@ -125,8 +126,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Use routes
 app.use('/api/discussions', discussionRoutes);
-
-// Add course routes
+app.use('/api/assignments', assignmentRoutes); // This line is important
 app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 // Start server

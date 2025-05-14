@@ -1,65 +1,58 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { getCurrentUser } from '../services/authService';
 
-// Create the context
 const UserContext = createContext();
 
-// Custom hook for using the context
-export const useUser = () => useContext(UserContext);
-
-// Provider component
 export const UserProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState('');
-  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check for user data in localStorage on component mount
-    const user = getCurrentUser();
-    console.log('Current user data:', user); // Add this to debug
-    if (user) {
-      setIsLoggedIn(true);
-      setUserRole(user.role || '');
-      // Try to get the username from the user object, checking all possible properties
-      const userDisplayName = user.user?.username || user.username || user.user?.name || user.name || user.user?.email || user.email || 'User';
-      setUsername(userDisplayName);
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setIsLoggedIn(true);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        // Clear invalid data
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
     }
     
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    
-    return () => clearTimeout(timer);
+    setIsLoading(false);
   }, []);
 
-  // Handle login
   const handleLogin = (userData) => {
+    setUser(userData);
     setIsLoggedIn(true);
-    setUserRole(userData.role || '');
-    const userDisplayName = userData.user?.username || userData.username || userData.user?.name || userData.name || userData.user?.email || userData.email || 'User';
-    setUsername(userDisplayName);
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
-  // Handle logout
   const handleLogout = () => {
+    setUser(null);
     setIsLoggedIn(false);
-    setUserRole('');
-    setUsername('');
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
-  const value = {
-    isLoggedIn,
-    userRole,
-    username,
-    isLoading,
-    handleLogin,
-    handleLogout
-  };
-
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+  return (
+    <UserContext.Provider value={{ 
+      user, 
+      isLoggedIn, 
+      isLoading,
+      handleLogin, 
+      handleLogout,
+      userRole: user?.role // Add this for convenience
+    }}>
+      {children}
+    </UserContext.Provider>
+  );
 };
+
+export const useUser = () => useContext(UserContext);

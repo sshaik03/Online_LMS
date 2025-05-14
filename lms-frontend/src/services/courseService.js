@@ -176,3 +176,16 @@ export const enrollWithCode = async (enrollmentCode) => {
     throw error;
   }
 };
+
+// Add this function to get enrolled courses for a student
+export const getEnrolledCourses = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/courses/enrolled`, {
+      headers: authHeader()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching enrolled courses:', error);
+    throw error;
+  }
+};

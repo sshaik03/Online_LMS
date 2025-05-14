@@ -109,4 +109,21 @@ router.delete('/:courseId', auth, async (req, res) => {
   }
 });
 
+// Add this route to get enrolled courses for a student
+router.get('/enrolled', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    const courses = await Course.find({ students: req.user.id });
+    console.log(`Found ${courses.length} courses for student ${req.user.id}`);
+    
+    res.json(courses);
+  } catch (error) {
+    console.error('Error fetching enrolled courses:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
