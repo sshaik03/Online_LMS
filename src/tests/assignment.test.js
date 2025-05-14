@@ -61,4 +61,31 @@ describe('Assignment Model Test', () => {
         });    
     });
 
+    it('should create and save an assignment successfully', async () => {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7); // Assignment due in a week
+        
+        const assignmentData = {
+            title: 'Test Assignment',
+            courseId: testCourse._id,
+            instructor: testInstructor._id,
+            type: 'Quiz',
+            points: 10,
+            dueDate: dueDate,
+            status: 'Not Started'
+        };
+
+        const validAssignment = new Assignment(assignmentData);
+        const savedAssignment = await validAssignment.save();
+        testAssignmentIDs.push(savedAssignment._id);
+
+        expect(savedAssignment.title).toBe(assignmentData.title);
+        expect(savedAssignment.courseId).toEqual(testCourse._id);
+        expect(savedAssignment.instructor).toEqual(testInstructor._id);
+        expect(savedAssignment.type).toBe(assignmentData.type);
+        expect(savedAssignment.points).toBe(assignmentData.points);
+        expect(savedAssignment.status).toBe('Not Started'); // Default status
+        expect(savedAssignment.createdAt).toBeDefined();
+    });
+
 });
