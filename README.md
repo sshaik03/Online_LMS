@@ -105,23 +105,30 @@ The Online Learning Management System (LMS) is designed to transform digital edu
 ## Run the Application
 
 - **Clone the repository**
+
 git clone https://github.com/yourusername/Online_LMS.git
 
 - **Navigate to project directory**
+  
 cd Online_LMS
 
 - **Install dependencies**
+  
 npm install
 
 - **Create .env file with the following variables:**
+  
 MONGODB_URI=mongodb://localhost:27017/lms
 JWT_SECRET=your_jwt_secret_key
 PORT=3001
 
 - **Start the server**
+  
 npm start
 
+
 - **Start front end**
+  
 cd lms-frontend
 
 npm install
