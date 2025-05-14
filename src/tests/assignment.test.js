@@ -104,4 +104,32 @@ describe('Assignment Model Test', () => {
         expect(err).toBeInstanceOf(mongoose.Error.ValidationError);
     });
 
+    it('should update assignment status to Completed', async () => {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 5); // Due date 5 days from now
+        
+        const assignment = new Assignment({
+            title: 'Assignment to Complete',
+            courseId: testCourse._id,
+            instructor: testInstructor._id,
+            type: 'Homework',
+            points: 20,
+            dueDate: dueDate,
+            status: 'Not Started'
+        });
+        
+        await assignment.save();
+        testAssignmentIDs.push(assignment._id);
+        
+        // Update status to In Progress
+        assignment.status = 'In Progress';
+        await assignment.save();
+        
+        // Update status to Completed
+        assignment.status = 'Completed';
+        const completedAssignment = await assignment.save();
+        
+        expect(completedAssignment.status).toBe('Completed');
+    });
+    
 });
