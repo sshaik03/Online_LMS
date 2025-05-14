@@ -20,13 +20,26 @@ export const register = async (userData) => {
 
 // Login user
 // Update login function to store user role
+// In your authService.js or wherever you handle login
 export const login = async (credentials) => {
-  const response = await axios.post(`${API_URL}/auth/login`, credentials);
-  if (response.data.token) {
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
+  try {
+    const response = await axios.post(`${API_URL}/auth/login`, credentials);
+    
+    // Check if response.data and response.data.token exist before storing
+    if (response.data && response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      
+      // Make sure user data exists before storing
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
   }
-  return response.data;
 };
 
 // Add course creation function
