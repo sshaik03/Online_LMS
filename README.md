@@ -89,42 +89,39 @@ The Online Learning Management System (LMS) is designed to transform digital edu
   Allow users to download course materials for offline study and automatic synchronization when reconnected.
 
 ## API
-POST /api/auth/register - Register a new user
-POST /api/auth/login - Login and get token
-GET /api/auth/me - Get current user info
 
-GET /api/courses - Get all courses
-GET /api/courses/:id - Get course by ID
-POST /api/courses - Create a new course
+| Method        | Endpoint      | Description |
+| ------------- | ------------- |-------------|
+| POST          |/api/auth/login| User login            |
+| POST          | /api/auth/register |  User registration           |
+| GET           | /api/courses| Get all courses            |
+| POST          |/api/courses|  Create a new course           |
+| GET           |/api/discussions |   Get all discussions          |
+| POST          | /api/discussions |   Create a new discussion          |
+| POST          | /api/discussions/:id/reply|  Reply to a discussion           |
 
-PUT /api/courses/:id - Update a course
-DELETE /api/courses/:id - Delete a course
 
-GET /api/discussions - Get all discussions
-GET /api/discussions/:id - Get discussion by ID
-POST /api/discussions - Create a new discussion
-POST /api/discussions/:id/reply - Reply to a discussion
 
 ## Run the Application
 
-# Clone the repository
+Clone the repository
 git clone https://github.com/yourusername/Online_LMS.git
 
-# Navigate to project directory
+Navigate to project directory
 cd Online_LMS
 
-# Install dependencies
+Install dependencies
 npm install
 
-# Create .env file with the following variables
-# MONGODB_URI=mongodb://localhost:27017/lms
-# JWT_SECRET=your_jwt_secret_key
-# PORT=3001
+Create .env file with the following variables
+MONGODB_URI=mongodb://localhost:27017/lms
+JWT_SECRET=your_jwt_secret_key
+PORT=3001
 
-# Start the server
+Start the server
 npm start
 
-# Start front end
+Start front end
 cd lms-frontend
 
 npm install
